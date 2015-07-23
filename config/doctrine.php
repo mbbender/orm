@@ -17,26 +17,63 @@ return [
     |--------------------------------------------------------------------------
     |
     */
-    'managers'                  => [
+    'entity_managers'                  => [
+        // The global configuration block is special. It is not configured as an entity manager but is used to
+        // apply settings to all entity managers unless overridden by the specific entity manager configurations.
+        'global' => [
+
+        ],
+
+        // The Entity Manager with the name 'default' will be bound as the entity manager used in Laravel if
+        // no Entity Manager is specfiically requested. If you resolve out the Entity Manager it will be 'default'.
         'default' => [
-            'meta'       => 'annotations',
-            'connection' => config('database.default'),
-            'paths'      => [
-                app_path()
+            'dbal' => [
+                'connection' => '',
+                'sqllogger' => '',
+                'result_cache' => '',
+                'auto_commit' => ''
             ],
-            'repository' => Doctrine\ORM\EntityRepository::class,
-            'proxies'    => [
-                'namespace'     => false,
-                'path'          => storage_path('proxies'),
-                'auto_generate' => env('DOCTRINE_PROXY_AUTOGENERATE', false)
+
+            'orm' => [
+                // If multiple mapping drivers are defined here a DriverChain will be created and each
+                // MappingDriver added to the chain.
+                'metadata_mapping' => [
+                    'annotations' => [
+                        'paths' => '',
+                        'namespaces' => '',
+                        'reader' => '', // Class to use as reader
+                        'registry' => '',
+                        'autoloader' => ''
+                    ],
+                    'yaml' => '',
+                    'xml' => '',
+                    'static_php' => '',
+                    'custom' => ''
+                ],
+                'caches' => [
+                    'query_cache' => '',
+                    'hydration_cache' => '',
+                    'second_level_cache' => ''
+                ],
+                'proxy_settings'    => [
+                    'namespace'     => false,
+                    'path'          => storage_path('proxies'),
+                    'auto_generate' => env('DOCTRINE_PROXY_AUTOGENERATE', false)
+                ],
+                'custom_functions' => [
+                    'numeric' => '',
+                    'datetime' => '',
+                    'string' => ''
+                ],
+                'naming_strategy' => '',
+                'quote_strategy' => '',
+                'default_repository_class' => Doctrine\ORM\EntityRepository::class,
             ],
+
             /*
             |--------------------------------------------------------------------------
             | Doctrine events
             |--------------------------------------------------------------------------
-            |
-            | If you want to use the Doctrine Extensions from Gedmo,
-            | you'll have to set this setting to true.
             |
             | The listener array expects the key to be a Doctrine event
             | e.g. Doctrine\ORM\Events::onFlush
@@ -46,52 +83,20 @@ return [
                 'listeners'   => [],
                 'subscribers' => []
             ],
-            'filters' => []
-        ]
-    ],
-    /*
-    |--------------------------------------------------------------------------
-    | Doctrine Meta Data
-    |--------------------------------------------------------------------------
-    |
-    | Available: annotations|yaml|xml
-    |
-    */
-    'meta'                      => [
-        'namespaces' => [
-            'App'
-        ],
-        'drivers'    => [
-            'annotations' => [
-                'driver' => 'annotations',
-                'simple' => false
-            ],
-            'yaml'        => [
-                'driver' => 'yaml'
-            ],
-            'xml'         => [
-                'driver' => 'xml'
-            ],
-            'config'      => [
-                'driver'       => 'config',
-                'mapping_file' => 'mappings'
-            ],
-            'static_php'  => [
-                'driver' => 'static_php'
+
+            'filters' => [],
+
+            'hooks' => [
+                'post_DBAL_config' => '', // Called after configuration object is created and set with DBAL specific configurations, but before Connection object is created. Passes in configuration object.
+                'post_connection' => '', // Called after Connection is created. Passes in Connection object for modification.
+                'pre_EM_creation' => '', // Called after all ORM specific configurations have been applied to the configuration object, but before we create the EntityManager. Last chance to edit the configuration. Passes in configuration object for modification.
+                'post_EM_creation' => '', // Called after EM is created but before it is registered with ManagerRegistry. Passes in EM.
             ]
+
         ]
     ],
-    /*
-    |--------------------------------------------------------------------------
-    | Doctrine Extensions
-    |--------------------------------------------------------------------------
-    |
-    | Enable/disable Doctrine Extensions by adding or removing them from the list
-    |
-    */
-    'extensions'                => [
-        //LaravelDoctrine\ORM\Extensions\TablePrefix\TablePrefixExtension::class,
-    ],
+
+
     /*
     |--------------------------------------------------------------------------
     | Doctrine custom types
@@ -105,20 +110,7 @@ return [
     | Enable Debugbar Doctrine query collection
     |--------------------------------------------------------------------------
     */
-    'debugbar'                  => env('DOCTRINE_DEBUGBAR', false),
-    /*
-    |--------------------------------------------------------------------------
-    | Cache
-    |--------------------------------------------------------------------------
-    |
-    | By default the Laravel cache setting is used,
-    | but it's possible to overrule here
-    |
-    | Available: acp|array|file|memcached|redis
-    |
-    */
-    'cache'                     => [
-        'default'      => config('cache.default'),
-        'second_level' => false,
-    ]
+    'debugbar'                  => env('DOCTRINE_DEBUGBAR', false)
+
+
 ];

@@ -36,6 +36,7 @@ trait ExtendableTrait
         }
 
         if ($driver = self::getInstance()->get($name)) {
+            // Todo: Looks like we do not add the $name to the $resolved array here so it seems it will resolve more than once
             event(get_class(self::getInstance()) . ':resolved', $driver);
 
             return $driver;
@@ -53,10 +54,15 @@ trait ExtendableTrait
     }
 
     /**
+     * This says it returns a driver, but if it resolves it returns a configuration for metadata. Needs to be
+     * investigated.
+     *
+     * For connection it seems to return array.
+     *
      * @param      $driver
      * @param null $default
      *
-     * @return Driver
+     * @return mixed (Configuration for MetadataManager | Array for ConnectionManager)
      */
     public function get($driver, $default = null)
     {

@@ -13,7 +13,7 @@ class SchemaCreateCommand extends Command
      */
     protected $signature = 'doctrine:schema:create
     {--sql : Dumps the generated SQL statements to the screen (does not execute them)}
-    {--em= : Create schema for a specific entity manager }';
+    {--em= : Create schema for a specific entity manager, supports comma separated list }';
 
     /**
      * The console command description.
