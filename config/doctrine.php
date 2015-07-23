@@ -21,12 +21,6 @@ return [
         // The global configuration block is special. It is not configured as an entity manager but is used to
         // apply settings to all entity managers unless overridden by the specific entity manager configurations.
         'global' => [
-
-        ],
-
-        // The Entity Manager with the name 'default' will be bound as the entity manager used in Laravel if
-        // no Entity Manager is specfiically requested. If you resolve out the Entity Manager it will be 'default'.
-        'default' => [
             'dbal' => [
                 'connection' => '',
                 'sqllogger' => '',
@@ -43,7 +37,8 @@ return [
                         'namespaces' => '',
                         'reader' => '', // Class to use as reader
                         'registry' => '',
-                        'autoloader' => ''
+                        'autoloader' => '',
+                        'filters' => [],
                     ],
                     'yaml' => '',
                     'xml' => '',
@@ -56,7 +51,7 @@ return [
                     'second_level_cache' => ''
                 ],
                 'proxy_settings'    => [
-                    'namespace'     => false,
+                    // 'namespace'     => '', // Set the namespace or leave commented out for no namespace
                     'path'          => storage_path('proxies'),
                     'auto_generate' => env('DOCTRINE_PROXY_AUTOGENERATE', false)
                 ],
@@ -70,21 +65,10 @@ return [
                 'default_repository_class' => Doctrine\ORM\EntityRepository::class,
             ],
 
-            /*
-            |--------------------------------------------------------------------------
-            | Doctrine events
-            |--------------------------------------------------------------------------
-            |
-            | The listener array expects the key to be a Doctrine event
-            | e.g. Doctrine\ORM\Events::onFlush
-            |
-            */
             'events'     => [
                 'listeners'   => [],
                 'subscribers' => []
             ],
-
-            'filters' => [],
 
             'hooks' => [
                 'post_DBAL_config' => '', // Called after configuration object is created and set with DBAL specific configurations, but before Connection object is created. Passes in configuration object.
@@ -92,6 +76,11 @@ return [
                 'pre_EM_creation' => '', // Called after all ORM specific configurations have been applied to the configuration object, but before we create the EntityManager. Last chance to edit the configuration. Passes in configuration object for modification.
                 'post_EM_creation' => '', // Called after EM is created but before it is registered with ManagerRegistry. Passes in EM.
             ]
+        ],
+
+        // The Entity Manager with the name 'default' will be bound as the entity manager used in Laravel if
+        // no Entity Manager is specifically requested. If you resolve out the Entity Manager it will be 'default'.
+        'default' => [
 
         ]
     ],

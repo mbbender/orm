@@ -4,6 +4,7 @@ namespace LaravelDoctrine\ORM;
 
 use Doctrine\Common\Persistence\AbstractManagerRegistry;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMException;
 use Illuminate\Contracts\Container\Container;
 
@@ -17,24 +18,28 @@ final class IlluminateRegistry extends AbstractManagerRegistry implements Manage
     /**
      * Constructor.
      *
-     * @param string    $name
-     * @param array     $connections
-     * @param array     $managers
-     * @param string    $defaultConnection
-     * @param string    $defaultManager
+     * @param array     $entityManagers
      * @param string    $proxyInterfaceName
      * @param Container $container
      */
     public function __construct(
-        $name,
-        array $connections,
-        array $managers,
-        $defaultConnection,
-        $defaultManager,
+        array $entityManagers,
         $proxyInterfaceName,
         Container $container
     ) {
-        parent::__construct($name, $connections, $managers, $defaultConnection, $defaultManager, $proxyInterfaceName);
+        $name = 'LaravelDoctrineRegistry';
+
+        $connections = [];
+        foreach($entityManagers as $name => $em)
+        {
+            $connections[$name] = $em->getConnection();
+        }
+        $defaultConnection = isset($connections['default']) ? $connections['default'] : head($connections);
+
+        $defaultManager =  isset($entityManagers['default']) ? $entityManagers['default'] : head($entityManagers);
+
+
+        parent::__construct($name, $connections, $entityManagers, $defaultConnection, $defaultManager, $proxyInterfaceName);
         $this->container = $container;
     }
 
