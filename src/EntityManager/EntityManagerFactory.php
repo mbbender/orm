@@ -9,20 +9,12 @@ class EntityManagerFactory {
      */
     public function make(EntityManagerConfiguration $configuration)
     {
-        // Apply any global configurations to the entity manager
-        $userConfigs = Config::mergeGlobalEntityManagerConfigurations($userConfigs);
 
-        // Create a blank Doctrine configuration
-        $doctrineConfig = new Configuration();
 
-        // Configure the DBAL specific settings, if any, before we create the connection
-        Config::configureDBALSettings($doctrineConfig, $userConfigs);
+        // Check on the existence of the requested DBAL connection for this manager and get one if it already
+        // exists or create and register a new one.
 
-        // Allow the user to modify the configuration if they want before we create the connection
-        $this->callHook(static::POST_DBAL_HOOK, $doctrineConfig);
 
-        // Create a DBAL connection to use with this entity manager
-        $dbalConnection = ConnectionFactory::create(Config::getDBALConnectionProperties($name), $doctrineConfig);
 
         // Allow the user to modify the connection if they'd like before we use it to create the EntityManager
         $this->callHook(static::POST_CONNECTION_HOOK, $dbalConnection);
