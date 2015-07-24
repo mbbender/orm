@@ -18,10 +18,10 @@ class DoctrineServiceProvider extends ServiceProvider
     /**
      * Boot service provider.
      */
-    public function boot()
+    public function boot(ManagerRegistry $managerRegistry)
     {
-        $this->app[ManagerRegistry::class]->addCustomTypes(ConfigHelper::getCustomTypes());
-        $this->app[ManagerRegistry::class]->createEntityManagers(ConfigHelper::getEntityManagerConfigurations());
+        $managerRegistry->addCustomTypes(ConfigHelper::getCustomTypes());
+        $managerRegistry->createEntityManagers(ConfigHelper::getEntityManagerConfigurations());
         $this->publishes([__DIR__ . '/../config/doctrine.php' => config_path('doctrine.php')], 'config');
     }
 
