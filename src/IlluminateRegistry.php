@@ -4,6 +4,7 @@ namespace LaravelDoctrine\ORM;
 
 use Doctrine\Common\Persistence\AbstractManagerRegistry;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\Common\Persistence\Proxy;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMException;
 use Illuminate\Contracts\Container\Container;
@@ -15,6 +16,12 @@ final class IlluminateRegistry extends AbstractManagerRegistry implements Manage
      */
     protected $container;
 
+
+    /**
+     * @var EntityManagerCollection
+     */
+    protected $entityManagerCollection;
+
     /**
      * Constructor.
      *
@@ -22,25 +29,18 @@ final class IlluminateRegistry extends AbstractManagerRegistry implements Manage
      * @param string    $proxyInterfaceName
      * @param Container $container
      */
-    public function __construct(
-        array $entityManagers,
-        $proxyInterfaceName,
-        Container $container
-    ) {
-        $name = 'LaravelDoctrineRegistry';
+    public function __construct(Container $container, Proxy $proxyInterface) {
 
-        $connections = [];
-        foreach($entityManagers as $name => $em)
-        {
-            $connections[$name] = $em->getConnection();
-        }
-        $defaultConnection = isset($connections['default']) ? $connections['default'] : head($connections);
-
-        $defaultManager =  isset($entityManagers['default']) ? $entityManagers['default'] : head($entityManagers);
-
-
-        parent::__construct($name, $connections, $entityManagers, $defaultConnection, $defaultManager, $proxyInterfaceName);
         $this->container = $container;
+
+        parent::__construct(
+            config('doctrine.manager_registery_name','LaravelDoctrineRegistry'),
+            $emc->connections()->byKey('name'),
+            $emc->byKey('name'),
+            isEmpty($emc->findBy(['name'=>'default'])) ? $emc->first() : $emc->findBy(['name'=>'default']),
+            isEmpty($emc->connections()->findBy(['name'=>'default'])) ? $emc->connections()->first() : $emc->connections()->findBy(['name'=>'default']),
+            Proxy::class
+        );
     }
 
     /**
@@ -55,6 +55,7 @@ final class IlluminateRegistry extends AbstractManagerRegistry implements Manage
     {
         return $this->container->make(self::getManagerNamePrefix() . $name);
     }
+
 
     /**
      * Resets the given services.

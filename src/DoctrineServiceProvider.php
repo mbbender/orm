@@ -79,15 +79,16 @@ class DoctrineServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // Get global stuff handled
-        // Todo: Add a config file validator to throw exceptions if config is not good
-        $this->registerPresenceVerifier();
-        $this->registerConsoleCommands();
+        // Register the Presence Verifier
+        $this->app->singleton('validation.presence', DoctrinePresenceVerifier::class);
 
-        // Create and register the Entity Managers
-        $entityManagers = $this->createEntityManagers(Config::getEntityManagerConfigurations());
-        $this->registerManagerRegistry($entityManagers);
-        $this->registerDefaultEntityManager();
+        // Register the Manager
+        $this->app->singleton(ManagerRegistry::class, IlluminateRegistry::class);
+
+        // Register the Entity Manager
+        $this->app->bind(EntityManagerInterface::class, IlluminateEntityManager::class);
+
+        $this->registerConsoleCommands();
     }
 
     /**
@@ -142,20 +143,21 @@ class DoctrineServiceProvider extends ServiceProvider
      *
      * @param $entityManagers
      */
-    protected function registerManagerRegistry($entityManagers)
+    protected function registerManagerRegistry()
     {
-        $this->app->singleton(
-            IlluminateRegistry::class,
-            function ($app) use ($entityManagers){
-                return new IlluminateRegistry(
-                    $entityManagers,
-                    Proxy::class,
-                    $app
-                );
-            }
-        );
-
-        $this->app->alias(IlluminateRegistry::class, ManagerRegistry::class);
+//        $this->app->singleton(
+//            IlluminateRegistry::class,
+//            function ($app){
+//                return new IlluminateRegistry(
+//                    $entityManagers,
+//                    Proxy::class,
+//                    $app
+//                );
+//            }
+//        );
+//
+//        $this->app->alias(IlluminateRegistry::class, ManagerRegistry::class);
+        $this->app->singleton(ManagerRegistry::class, IlluminateRegistry::class);
     }
 
     /**
@@ -373,10 +375,13 @@ class DoctrineServiceProvider extends ServiceProvider
     /**
      * Register the validation presence verifier
      */
-    protected function registerPresenceVerifier()
-    {
-        $this->app->singleton('validation.presence', DoctrinePresenceVerifier::class);
-    }
+//    protected function registerPresenceVerifier()
+//    {
+//        $this->app->singleton(
+//            'validation.presence',
+//            DoctrinePresenceVerifier::class
+//        );
+//    }
 
     /**
      * Register console commands
@@ -427,11 +432,7 @@ class DoctrineServiceProvider extends ServiceProvider
     public function provides()
     {
         return [
-            'em',
             'validation.presence',
-            'migration.repository',
-            AuthManager::class,
-            EntityManager::class,
             EntityManagerInterface::class,
             ManagerRegistry::class
         ];
