@@ -2,7 +2,6 @@
 
 namespace LaravelDoctrine\ORM;
 
-use DebugBar\Bridge\DoctrineCollector;
 use Doctrine\Common\Persistence\ManagerRegistry;
 use Illuminate\Support\ServiceProvider;
 use LaravelDoctrine\ORM\Configuration\Config as ConfigHelper;
@@ -23,10 +22,7 @@ class DoctrineServiceProvider extends ServiceProvider
     {
         $this->app[ManagerRegistry::class]->addCustomTypes(ConfigHelper::getCustomTypes());
         $this->app[ManagerRegistry::class]->createEntityManagers(ConfigHelper::getEntityManagerConfigurations());
-
-        $this->publishes([
-            $this->getConfigPath() => config_path('doctrine.php'),
-        ], 'config');
+        $this->publishes([__DIR__ . '/../config/doctrine.php' => config_path('doctrine.php')], 'config');
     }
 
     /**
@@ -65,14 +61,6 @@ class DoctrineServiceProvider extends ServiceProvider
         return [
             ManagerRegistry::class
         ];
-    }
-
-    /**
-     * @return string
-     */
-    protected function getConfigPath()
-    {
-        return __DIR__ . '/../config/doctrine.php';
     }
 
 }
