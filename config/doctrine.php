@@ -11,6 +11,15 @@ return [
     |
     */
     'dev'                       => config('app.debug'),
+
+   'dbal_connections' => [
+       'default' => [
+           'connection' => '',
+           'sqllogger' => '',
+           'result_cache' => '',
+           'auto_commit' => ''
+       ]
+   ],
     /*
     |--------------------------------------------------------------------------
     | Entity Mangers
@@ -21,12 +30,7 @@ return [
         // The global configuration block is special. It is not configured as an entity manager but is used to
         // apply settings to all entity managers unless overridden by the specific entity manager configurations.
         'global' => [
-            'dbal' => [
-                'connection' => '',
-                'sqllogger' => '',
-                'result_cache' => '',
-                'auto_commit' => ''
-            ],
+            'dbal_connection_name' => 'default',
 
             'orm' => [
                 // If multiple mapping drivers are defined here a DriverChain will be created and each

@@ -9,92 +9,257 @@ use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\ORMException;
 use Illuminate\Contracts\Container\Container;
 
-final class IlluminateRegistry extends AbstractManagerRegistry implements ManagerRegistry
+/**
+ * Class IlluminateRegistry
+ * @package LaravelDoctrine\ORM
+ */
+class IlluminateRegistry implements ManagerRegistry
 {
     /**
-     * @var Container
+     * @var string
      */
-    protected $container;
-
+    protected $name;
 
     /**
-     * @var EntityManagerCollection
+     * @var array
      */
-    protected $entityManagerCollection;
+    protected $connections;
 
     /**
-     * Constructor.
+     * @var array
+     */
+    protected $managers;
+
+    /**
+     * @var string
+     */
+    protected $defaultConnection;
+
+    /**
+     * @var string
+     */
+    protected $defaultManager;
+
+    /**
+     * @var string
+     */
+    protected $proxyInterfaceName;
+
+
+    public function __construct()
+    {
+        $this->name = 'IlluminateRegistry';
+        $this->connections = [];
+        $this->managers = [];
+        $this->defaultManager = 'default';
+        $this->defaultConnection = 'default';
+        $this->proxyInterfaceName = Proxy::class;
+    }
+
+    /**
+     * @param EntityManager $entityManager
+     */
+    public function registerManager($name, EntityManager $entityManager)
+    {
+        $this->managers[$name] = $entityManager;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultConnection()
+    {
+        return $this->defaultConnection;
+    }
+
+    /**
+     * @param string $defaultConnection
+     */
+    public function setDefaultConnection($defaultConnection)
+    {
+        $this->defaultConnection = $defaultConnection;
+    }
+
+    /**
+     * @return string
+     */
+    public function getProxyInterfaceName()
+    {
+        return $this->proxyInterfaceName;
+    }
+
+    /**
+     * @param string $proxyInterfaceName
+     */
+    public function setProxyInterfaceName($proxyInterfaceName)
+    {
+        $this->proxyInterfaceName = $proxyInterfaceName;
+    }
+
+    /**
+     * Gets the name of the registry.
      *
-     * @param array     $entityManagers
-     * @param string    $proxyInterfaceName
-     * @param Container $container
+     * @return string
      */
-    public function __construct(Container $container, Proxy $proxyInterface) {
-
-        $this->container = $container;
-
-        parent::__construct(
-            config('doctrine.manager_registery_name','LaravelDoctrineRegistry'),
-            $emc->connections()->byKey('name'),
-            $emc->byKey('name'),
-            isEmpty($emc->findBy(['name'=>'default'])) ? $emc->first() : $emc->findBy(['name'=>'default']),
-            isEmpty($emc->connections()->findBy(['name'=>'default'])) ? $emc->connections()->first() : $emc->connections()->findBy(['name'=>'default']),
-            Proxy::class
-        );
-    }
-
-    public function createEntityManagers(array $managerConfigs)
+    public function getName()
     {
-        foreach($managerConfigs as $name => $managerConfig)
-        {
-            $em = $this->createEntityManager($name, $managerConfig);
-        }
-    }
-
-    public function createEntityManager($name, $userConfigs)
-    {
-        // Apply any global configurations to the entity manager
-        $userConfigs = Config::mergeGlobalEntityManagerConfigurations($userConfigs);
-
-        // Create a blank Doctrine configuration
-        $doctrineConfig = new Configuration();
-
-        // Configure the DBAL specific settings, if any, before we create the connection
-        Config::configureDBALSettings($doctrineConfig, $userConfigs);
-
-        // Allow the user to modify the configuration if they want before we create the connection
-        $this->callHook(static::POST_DBAL_HOOK, $doctrineConfig);
-
-        // Create a DBAL connection to use with this entity manager
-        $dbalConnection = ConnectionFactory::create(Config::getDBALConnectionProperties($emName), $doctrineConfig);
-
-        // Allow the user to modify the connection if they'd like before we use it to create the EntityManager
-        $this->callHook(static::POST_CONNECTION_HOOK, $dbalConnection);
-
-        // Configure the ORM specific settings (includes cache and metadata configuration)
-        Config::configureORMSettings($doctrineConfig, $userConfigs);
-
-        // Allow the user to edit the configuration after we've applied the ORM settings, but before we create the EntityManager
-        $this->callHook(static::POST_ORM_HOOK, $doctrineConfig);
-
-        // Create the Entity Manager
-        return EntityManager::create($dbalConnection, $doctrineConfig);
+        return $this->name;
     }
 
     /**
-     * @param array $typeMap
-     * @throws \Doctrine\DBAL\DBALException
+     * {@inheritdoc}
      */
-    public function addCustomTypes(array $typeMap)
+    public function getConnection($name = null)
     {
-        foreach ($typeMap as $name => $class) {
-            if (!Type::hasType($name)) {
-                Type::addType($name, $class);
-            } else {
-                Type::overrideType($name, $class);
+        if (null === $name) {
+            $name = $this->defaultConnection;
+        }
+
+        if (!isset($this->connections[$name])) {
+            throw new \InvalidArgumentException(sprintf('Doctrine %s Connection named "%s" does not exist.', $this->name, $name));
+        }
+
+        return $this->getService($this->connections[$name]);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getConnectionNames()
+    {
+        return $this->connections;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getConnections()
+    {
+        $connections = array();
+        foreach ($this->connections as $name => $id) {
+            $connections[$name] = $this->getService($id);
+        }
+
+        return $connections;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getDefaultConnectionName()
+    {
+        return $this->defaultConnection;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getDefaultManagerName()
+    {
+        return $this->defaultManager;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function getManager($name = null)
+    {
+        if (null === $name) {
+            return $this->getDefaultManager();
+        }
+
+        if (!isset($this->managers[$name])) {
+            throw new \InvalidArgumentException(sprintf('Doctrine %s Manager named "%s" does not exist.', $this->name, $name));
+        }
+
+        return $this->getService($this->managers[$name]);
+    }
+
+    public function getDefaultManager()
+    {
+        if(empty($this->managers))
+            throw new \InvalidArgumentException(sprintf('No Doctrine Managers have been registered.'));
+
+        if(isset($this->defaultManager) && isset($this->managers[$this->getDefaultManagerName()]))
+            return $this->getManager($this->getDefaultManagerName());
+
+        return $this->getService(head($this->managers));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getManagerForClass($class)
+    {
+        // Check for namespace alias
+        if (strpos($class, ':') !== false) {
+            list($namespaceAlias, $simpleClassName) = explode(':', $class, 2);
+            $class = $this->getAliasNamespace($namespaceAlias) . '\\' . $simpleClassName;
+        }
+
+        $proxyClass = new \ReflectionClass($class);
+        if ($proxyClass->implementsInterface($this->proxyInterfaceName)) {
+            $class = $proxyClass->getParentClass()->getName();
+        }
+
+        foreach ($this->managers as $id) {
+            $manager = $this->getService($id);
+
+            if (!$manager->getMetadataFactory()->isTransient($class)) {
+                return $manager;
             }
         }
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getManagerNames()
+    {
+        return $this->managers;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getManagers()
+    {
+        $dms = array();
+        foreach ($this->managers as $name => $id) {
+            $dms[$name] = $this->getService($id);
+        }
+
+        return $dms;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getRepository($persistentObjectName, $persistentManagerName = null)
+    {
+        return $this->getManager($persistentManagerName)->getRepository($persistentObjectName);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function resetManager($name = null)
+    {
+        if (null === $name) {
+            $name = $this->defaultManager;
+        }
+
+        if (!isset($this->managers[$name])) {
+            throw new \InvalidArgumentException(sprintf('Doctrine %s Manager named "%s" does not exist.', $this->name, $name));
+        }
+
+        // force the creation of a new document manager
+        // if the current one is closed
+        $this->resetService($this->managers[$name]);
+    }
+
 
     /**
      * Fetches/creates the given services.
@@ -143,15 +308,6 @@ final class IlluminateRegistry extends AbstractManagerRegistry implements Manage
         throw ORMException::unknownEntityNamespace($alias);
     }
 
-    /**
-     * @param string $class
-     *
-     * @return mixed|object
-     */
-    public function getManagerForClass($class = 'default')
-    {
-        return $this->getService($class);
-    }
 
     /**
      * @return string

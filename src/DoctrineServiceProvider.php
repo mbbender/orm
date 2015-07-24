@@ -3,9 +3,13 @@
 namespace LaravelDoctrine\ORM;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityManagerInterface;
+use Illuminate\Database\Capsule\Manager;
 use Illuminate\Support\ServiceProvider;
 use LaravelDoctrine\ORM\Configuration\Config as ConfigHelper;
 use LaravelDoctrine\ORM\Console as Console;
+use LaravelDoctrine\ORM\EntityManager\EntityManagerConfiguration;
+use LaravelDoctrine\ORM\EntityManager\EntityManagerFactory;
 
 class DoctrineServiceProvider extends ServiceProvider
 {
@@ -18,10 +22,19 @@ class DoctrineServiceProvider extends ServiceProvider
     /**
      * Boot service provider.
      */
-    public function boot(ManagerRegistry $managerRegistry)
+    public function boot(ManagerRegistry $managerRegistry, DoctrineExtender $doctrineExtender, EntityManagerFactory $emFactory)
     {
-        $managerRegistry->addCustomTypes(ConfigHelper::getCustomTypes());
-        $managerRegistry->createEntityManagers(ConfigHelper::getEntityManagerConfigurations());
+        $doctrineExtender->addCustomTypes(ConfigHelper::getCustomTypes());
+        $doctrineExtender->registerAnnotations(ConfigHelper::getCustomAnnotations());
+
+        foreach(ConfigHelper::getEntityManagerConfigurations() as $name => $config)
+        {
+            $managerRegistry->registerManager(
+                $name,
+                $emFactory->make(new EntityManagerConfiguration($config))
+            );
+        }
+
         $this->publishes([__DIR__ . '/../config/doctrine.php' => config_path('doctrine.php')], 'config');
     }
 
@@ -34,6 +47,11 @@ class DoctrineServiceProvider extends ServiceProvider
        // Bind the Manager Registry
         $this->app->singleton(ManagerRegistry::class, function($app){
             return new IlluminateRegistry();
+        });
+
+        // Bind the Manager Registry
+        $this->app->singleton(EntityManagerInterface::class, function($app){
+            return $app[ManagerRegistry::class]->getDefaultManager();
         });
 
         // Register Console Commands
@@ -59,7 +77,8 @@ class DoctrineServiceProvider extends ServiceProvider
     public function provides()
     {
         return [
-            ManagerRegistry::class
+            ManagerRegistry::class,
+            EntityManagerInterface::class
         ];
     }
 
